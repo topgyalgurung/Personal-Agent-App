@@ -4,7 +4,7 @@ import json
 import requests
 
 from dotenv import load_dotenv
-from agent import execute_tool
+from tool_dispatch import execute_tool
 from schemas import TOOLS
 from prompts import get_system_prompt
 
@@ -43,6 +43,7 @@ def ask_llm(messages):
             "tools": convert_tools(),
         },
         timeout=120,
+        allow_redirects=False,
     )
 
     response.raise_for_status()
@@ -88,6 +89,7 @@ def run_ollama_agent(prompt):
                 result = execute_tool(
                     name,
                     arguments,
+                    provider="ollama",
                 )
             except Exception as error:
                 result = {

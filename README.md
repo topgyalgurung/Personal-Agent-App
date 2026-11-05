@@ -14,6 +14,18 @@ User → Router → Claude API (Primary)
              AI Response
 ```
 
+```
+main.py
+  → router.py chooses Claude or Ollama
+    → model requests a tool
+      → shared dispatcher checks privacy settings
+        → Python runs a fixed AppleScript
+          → Notes returns structured data
+        ← tool result goes back to the chosen model
+      ← model identifies ideas, tasks, and follow-ups
+
+```
+
 ## LLM Fallback
 
 The application uses a custom `router.py` to manage model selection and fallback.
