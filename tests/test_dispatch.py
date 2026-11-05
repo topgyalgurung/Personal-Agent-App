@@ -77,3 +77,24 @@ def test_calendar_runs_for_local_ollama(monkeypatch):
     outcome = dispatch("list_events", {"start_date": "2026-11-05"}, provider="ollama")
 
     assert outcome.result == [{"title": "x"}]
+
+
+@pytest.mark.parametrize("name, args", [
+    ("search_emails", {"query": "is:unread"}),
+    ("read_email", {"id": "m1"}),
+])
+def test_gmail_is_blocked_for_non_local_providers(name, args):
+    with pytest.raises(PermissionError, match="local|laptop"):
+        dispatch(name, args, provider="claude")
+
+
+def test_gmail_runs_for_local_ollama(monkeypatch):
+    monkeypatch.setenv("OLLAMA_HOST", "http://localhost:11434")
+    monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5:7b")
+    monkeypatch.setitem(
+        tool_dispatch.REGISTRY, "search_emails", lambda query, limit=10: [query]
+    )
+
+    outcome = dispatch("search_emails", {"query": "x"}, provider="ollama")
+
+    assert outcome.result == ["x"]

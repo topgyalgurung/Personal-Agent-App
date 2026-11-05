@@ -1,6 +1,7 @@
 """Tool functions the model can call. Each one is read-only."""
 from datetime import datetime, timedelta
 
+from integrations.gmail import read_email, search_emails
 from integrations.google_calendar import list_events
 
 

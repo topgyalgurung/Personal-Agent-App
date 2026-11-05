@@ -13,6 +13,8 @@ NOTES_TOOLS = {
 
 GOOGLE_TOOLS = {
     "list_events",
+    "search_emails",
+    "read_email",
 }
 
 REGISTRY = {

@@ -7,6 +7,8 @@ def test_every_tool_is_a_separate_schema_entry():
 
     assert names == [
         "list_events",
+        "search_emails",
+        "read_email",
         "list_notes",
         "search_notes",
         "read_note",
