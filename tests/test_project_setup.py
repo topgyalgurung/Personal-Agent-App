@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PYTEST = Path(sys.executable).parent / "pytest"
 
 ROOT_IMPORTING_TESTS = [
-    "tests/test_agent.py",
+    "tests/test_prompts.py",
     "tests/test_notes.py",
 ]
 

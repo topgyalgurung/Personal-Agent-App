@@ -1,9 +1,13 @@
+import pytest
 import copy
 from datetime import date
 
 from agent_core import MAX_TOOL_ITERATIONS, Session, Turn
 from providers import ProviderUnavailable, Reply, ToolCall
 from schemas import TOOLS
+
+
+pytestmark = pytest.mark.usefixtures("stub_tools")
 
 
 class FakeAdapter:

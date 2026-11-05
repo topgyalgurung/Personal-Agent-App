@@ -6,9 +6,7 @@ def test_every_tool_is_a_separate_schema_entry():
     names = [tool["name"] for tool in TOOLS]
 
     assert names == [
-        "get_tasks",
-        "get_calendar_events",
-        "create_task",
+        "list_events",
         "list_notes",
         "search_notes",
         "read_note",

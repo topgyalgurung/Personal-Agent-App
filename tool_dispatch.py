@@ -11,15 +11,49 @@ NOTES_TOOLS = {
     "read_note",
 }
 
+GOOGLE_TOOLS = {
+    "list_events",
+}
+
 REGISTRY = {
     name: getattr(tools, name)
     for name in [
-        "get_tasks",
-        "get_calendar_events",
-        "create_task",
         *NOTES_TOOLS,
+        *GOOGLE_TOOLS,
     ]
 }
+
+
+def check_local_ollama():
+    host = urlparse(
+        os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    )
+
+    if (
+        host.scheme != "http"
+        or host.hostname not in {"localhost", "127.0.0.1", "::1"}
+    ):
+        raise PermissionError(
+            "Notes require a local Ollama endpoint."
+        )
+
+    if ":cloud" in os.getenv("OLLAMA_MODEL", "").lower():
+        raise PermissionError("Choose a downloaded local model.")
+
+
+def check_google_access(provider):
+    """Calendar and Gmail data never leaves this laptop."""
+    if provider != "ollama":
+        raise PermissionError(
+            "Google data stays on this laptop. Use local Ollama."
+        )
+
+    try:
+        check_local_ollama()
+    except PermissionError:
+        raise PermissionError(
+            "Google data requires a local Ollama endpoint and model."
+        )
 
 
 def check_notes_access(provider):
@@ -34,20 +68,7 @@ def check_notes_access(provider):
             )
 
     elif provider == "ollama":
-        host = urlparse(
-            os.getenv("OLLAMA_HOST", "http://localhost:11434")
-        )
-
-        if (
-            host.scheme != "http"
-            or host.hostname not in {"localhost", "127.0.0.1", "::1"}
-        ):
-            raise PermissionError(
-                "Notes require a local Ollama endpoint."
-            )
-
-        if ":cloud" in os.getenv("OLLAMA_MODEL", "").lower():
-            raise PermissionError("Choose a downloaded local model.")
+        check_local_ollama()
 
     else:
         raise PermissionError("Unknown provider.")
@@ -62,6 +83,9 @@ def execute_tool(name, arguments, *, provider="claude"):
 
     if name in NOTES_TOOLS:
         check_notes_access(provider)
+
+    if name in GOOGLE_TOOLS:
+        check_google_access(provider)
 
     return REGISTRY[name](**arguments)
 

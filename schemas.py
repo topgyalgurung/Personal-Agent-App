@@ -1,54 +1,25 @@
 
 TOOLS = [
     {
-        "name": "get_tasks",
+        "name": "list_events",
         "description": (
-            "Retrieve all outstanding tasks "
-            "that have not been completed."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {},
-            "required": [],
-        },
-    },
-    {
-        "name": "get_calendar_events",
-        "description": (
-            "Retrieve upcoming calendar events."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {},
-            "required": [],
-        },
-    },
-    {
-        "name": "create_task",
-        "description": (
-            "Create a new task with a title "
-            "and due date. Use only when "
-            "the user explicitly requests "
-            "task creation."
+            "List Google Calendar events from start_date through end_date, "
+            "both inclusive, in the user's local time. Defaults to today. "
+            "Events are ordered by start time."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "title": {
+                "start_date": {
                     "type": "string",
-                    "description": "Task title",
+                    "description": "First day, YYYY-MM-DD. Defaults to today.",
                 },
-                "due_date": {
+                "end_date": {
                     "type": "string",
-                    "description": (
-                        "Due date in YYYY-MM-DD format"
-                    ),
+                    "description": "Last day, YYYY-MM-DD. Defaults to start_date.",
                 },
             },
-            "required": [
-                "title",
-                "due_date",
-            ],
+            "additionalProperties": False,
         },
     },
     # notes schema

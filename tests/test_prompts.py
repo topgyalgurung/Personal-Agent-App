@@ -24,3 +24,14 @@ def test_prompt_defaults_to_the_system_clock():
 
     assert f"Current date: {local.date().isoformat()}" in prompt
     assert f"Timezone: {local.tzname()}" in prompt
+
+
+def test_prompt_only_names_tools_that_exist():
+    from schemas import TOOLS
+
+    prompt = get_system_prompt()
+
+    for removed in ("get_tasks", "get_calendar_events", "create_task"):
+        assert removed not in prompt
+    assert "list_events" in prompt
+    assert {t["name"] for t in TOOLS} >= {"list_events"}

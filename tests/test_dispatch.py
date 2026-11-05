@@ -6,6 +6,9 @@ import tool_dispatch
 from tool_dispatch import Executed, dispatch
 
 
+pytestmark = pytest.mark.usefixtures("stub_tools")
+
+
 def test_runs_tool_and_returns_executed_result():
     outcome = dispatch("get_tasks", {}, provider="ollama")
 
@@ -43,3 +46,34 @@ def test_keeps_notes_privacy_checks(monkeypatch):
 
 def test_pass_through_guard_never_asks_for_approval():
     assert tool_dispatch.needs_approval("create_task", {}) is False
+
+
+def test_calendar_is_blocked_for_non_local_providers():
+    with pytest.raises(PermissionError, match="local"):
+        dispatch("list_events", {}, provider="claude")
+
+
+def test_calendar_is_blocked_for_a_remote_ollama_host(monkeypatch):
+    monkeypatch.setenv("OLLAMA_HOST", "http://example.com:11434")
+
+    with pytest.raises(PermissionError, match="local"):
+        dispatch("list_events", {}, provider="ollama")
+
+
+def test_calendar_is_blocked_for_cloud_models(monkeypatch):
+    monkeypatch.setenv("OLLAMA_MODEL", "llama3:cloud")
+
+    with pytest.raises(PermissionError):
+        dispatch("list_events", {}, provider="ollama")
+
+
+def test_calendar_runs_for_local_ollama(monkeypatch):
+    monkeypatch.setenv("OLLAMA_HOST", "http://localhost:11434")
+    monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5:7b")
+    monkeypatch.setitem(
+        tool_dispatch.REGISTRY, "list_events", lambda **kwargs: [{"title": "x"}]
+    )
+
+    outcome = dispatch("list_events", {"start_date": "2026-11-05"}, provider="ollama")
+
+    assert outcome.result == [{"title": "x"}]
