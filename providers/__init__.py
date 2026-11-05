@@ -11,11 +11,16 @@ converts it to its own API format and converts the answer back to a Reply.
 from dataclasses import dataclass, field
 
 
+class ProviderUnavailable(Exception):
+    """The model can't be reached; the message is shown to the user."""
+
+
 @dataclass
 class ToolCall:
     name: str
     arguments: dict
     id: str | None = None
+    error: str | None = None
 
 
 @dataclass

@@ -1,8 +1,18 @@
 import json
 from unittest.mock import Mock
 
-from providers import Reply, ToolCall
+import pytest
+import requests
+
+from providers import ProviderUnavailable, Reply, ToolCall
 from providers import ollama
+
+
+def fake_response(status, body):
+    response = requests.Response()
+    response.status_code = status
+    response._content = json.dumps(body).encode()
+    return response
 
 
 TOOLS = [{
@@ -117,8 +127,8 @@ def test_parses_tool_call_with_no_arguments_key():
 def test_chat_posts_to_local_ollama_with_default_model(monkeypatch):
     monkeypatch.delenv("OLLAMA_MODEL", raising=False)
     monkeypatch.delenv("OLLAMA_HOST", raising=False)
-    post = Mock(return_value=Mock(
-        json=Mock(return_value={"message": {"role": "assistant", "content": "Hi"}}),
+    post = Mock(return_value=fake_response(
+        200, {"message": {"role": "assistant", "content": "Hi"}},
     ))
     monkeypatch.setattr(ollama.requests, "post", post)
 
@@ -147,8 +157,8 @@ def test_chat_posts_to_local_ollama_with_default_model(monkeypatch):
 
 def test_chat_uses_model_from_environment(monkeypatch):
     monkeypatch.setenv("OLLAMA_MODEL", "llama3.1:8b")
-    post = Mock(return_value=Mock(
-        json=Mock(return_value={"message": {"role": "assistant", "content": ""}}),
+    post = Mock(return_value=fake_response(
+        200, {"message": {"role": "assistant", "content": ""}},
     ))
     monkeypatch.setattr(ollama.requests, "post", post)
 
@@ -159,3 +169,92 @@ def test_chat_uses_model_from_environment(monkeypatch):
 
 def test_adapter_reports_its_provider_name():
     assert ollama.OllamaAdapter.name == "ollama"
+
+
+# --- Errors -------------------------------------------------------------
+
+
+def test_connection_refused_says_how_to_start_ollama(monkeypatch):
+    post = Mock(side_effect=requests.ConnectionError("refused"))
+    monkeypatch.setattr(ollama.requests, "post", post)
+
+    with pytest.raises(ProviderUnavailable) as error:
+        ollama.OllamaAdapter().chat([], system="", tools=[])
+
+    assert str(error.value) == "Ollama isn't running. Start it with: ollama serve"
+
+
+def test_timeout_says_ollama_is_slow(monkeypatch):
+    post = Mock(side_effect=requests.Timeout("slow"))
+    monkeypatch.setattr(ollama.requests, "post", post)
+
+    with pytest.raises(ProviderUnavailable, match="didn't answer within 60 seconds"):
+        ollama.OllamaAdapter().chat([], system="", tools=[])
+
+
+def test_waits_at_most_60_seconds(monkeypatch):
+    post = Mock(return_value=fake_response(200, {"message": {"content": ""}}))
+    monkeypatch.setattr(ollama.requests, "post", post)
+
+    ollama.OllamaAdapter().chat([], system="", tools=[])
+
+    assert post.call_args.kwargs["timeout"] == 60
+
+
+def test_missing_model_says_how_to_pull_it(monkeypatch):
+    monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5:7b")
+    post = Mock(return_value=fake_response(
+        404, {"error": 'model "qwen2.5:7b" not found, try pulling it first'},
+    ))
+    monkeypatch.setattr(ollama.requests, "post", post)
+
+    with pytest.raises(ProviderUnavailable) as error:
+        ollama.OllamaAdapter().chat([], system="", tools=[])
+
+    assert str(error.value) == (
+        "Model qwen2.5:7b isn't downloaded. Run: ollama pull qwen2.5:7b"
+    )
+
+
+def test_other_http_error_reports_status(monkeypatch):
+    post = Mock(return_value=fake_response(500, {"error": "boom"}))
+    monkeypatch.setattr(ollama.requests, "post", post)
+
+    with pytest.raises(ProviderUnavailable, match="status 500"):
+        ollama.OllamaAdapter().chat([], system="", tools=[])
+
+
+def test_malformed_argument_json_becomes_tool_call_error():
+    reply = ollama.parse_reply({
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+            {"function": {"name": "search_notes", "arguments": '{"query": "tr'}},
+        ],
+    })
+
+    call = reply.tool_calls[0]
+    assert call.name == "search_notes"
+    assert call.arguments == {}
+    assert call.error == "Tool arguments were not valid JSON."
+
+
+@pytest.mark.parametrize("arguments", ['"trip"', "[1, 2]", "42"])
+def test_argument_json_that_is_not_an_object_becomes_tool_call_error(arguments):
+    reply = ollama.parse_reply({
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [{"function": {"name": "search_notes", "arguments": arguments}}],
+    })
+
+    assert reply.tool_calls[0].error == "Tool arguments must be a JSON object."
+
+
+def test_valid_tool_call_has_no_error():
+    reply = ollama.parse_reply({
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [{"function": {"name": "get_tasks", "arguments": {}}}],
+    })
+
+    assert reply.tool_calls[0].error is None
