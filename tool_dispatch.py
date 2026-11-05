@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import tools
@@ -63,3 +64,26 @@ def execute_tool(name, arguments, *, provider="claude"):
         check_notes_access(provider)
 
     return REGISTRY[name](**arguments)
+
+
+@dataclass
+class Executed:
+    result: object
+
+
+@dataclass
+class NeedsApproval:
+    action: dict
+
+
+def needs_approval(name, arguments):
+    """Pass-through guard. action-guard replaces this with real rules."""
+    return False
+
+
+def dispatch(name, arguments, *, provider, cloud_consent=False):
+    """Run a tool call, or hold it for approval."""
+    if needs_approval(name, arguments):
+        return NeedsApproval({"name": name, "arguments": arguments})
+
+    return Executed(execute_tool(name, arguments, provider=provider))
