@@ -13,14 +13,14 @@ the root is on the path, and set the asyncio fixture loop scope to clear the
 deprecation warning.
 
 **Acceptance criteria:**
-- [ ] `uv run pytest -q` collects and passes all 7 existing tests
-- [ ] No `PytestDeprecationWarning` in the output
+- [x] `uv run pytest -q` collects and passes all 7 existing tests
+- [x] No `PytestDeprecationWarning` in the output
 
 **Verification:**
-- [ ] `uv run pytest -q`
+- [x] `uv run pytest -q` (12 passed: 7 existing plus 5 in `tests/test_project_setup.py`)
 
 **Dependencies:** None
-**Files:** `pyproject.toml`
+**Files:** `pyproject.toml`, `tests/test_project_setup.py`
 **Scope:** XS
 
 ---
