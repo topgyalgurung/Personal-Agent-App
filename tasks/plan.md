@@ -55,7 +55,7 @@ T3, T4, and T6 can be done in any order after T2.
 
 ### Phase 1: Local chat
 - [x] Task 1: Fix test collection
-- [ ] Task 2: `Session.send` with Ollama and multi-turn memory
+- [x] Task 2: `Session.send` with Ollama and multi-turn memory
 - [ ] Task 3: Tool-use eval script and model comparison
 
 ### Checkpoint A0: model is good enough

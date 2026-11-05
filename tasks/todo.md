@@ -34,14 +34,14 @@ from `ollama_agent.py` into `providers/ollama.py` as `chat()`. Change
 pass-through guard. Default model becomes `qwen2.5:7b`.
 
 **Acceptance criteria:**
-- [ ] With a fake adapter, `send` returns a plain answer, and handles one tool
+- [x] With a fake adapter, `send` returns a plain answer, and handles one tool
       call, then an answer, and several tool calls in one reply
-- [ ] A second `send` includes the first exchange in the messages sent to the adapter
-- [ ] `Turn.tool_calls` lists every call with its arguments and result
+- [x] A second `send` includes the first exchange in the messages sent to the adapter
+- [x] `Turn.tool_calls` lists every call with its arguments and result
 
 **Verification:**
-- [ ] `uv run pytest tests/test_agent_core.py -q`
-- [ ] `uv run pytest -q` (existing tests still pass)
+- [x] `uv run pytest tests/test_agent_core.py -q`
+- [x] `uv run pytest -q` (existing tests still pass)
 
 **Dependencies:** Task 1
 **Files:** `agent_core.py`, `providers/__init__.py`, `providers/ollama.py`,
