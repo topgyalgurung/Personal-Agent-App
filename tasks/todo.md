@@ -67,12 +67,12 @@ expires. `uv run python -m integrations.google_auth` signs you in. The README
 gets one-time Google Cloud setup steps.
 
 **Acceptance criteria:**
-- [ ] Valid saved token is loaded without a browser; expired token is refreshed and re-saved
-- [ ] Token file is created with mode 600; only read-only scopes are requested
-- [ ] Missing `credentials.json` or not signed in gives a clear "run sign-in" error
+- [x] Valid saved token is loaded without a browser; expired token is refreshed and re-saved
+- [x] Token file is created with mode 600; only read-only scopes are requested
+- [x] Missing `credentials.json` or not signed in gives a clear "run sign-in" error
 
 **Verification:**
-- [ ] `uv run pytest tests/test_google_auth.py -q` (fakes, no network)
+- [x] `uv run pytest tests/test_google_auth.py -q` (fakes, no network)
 - [ ] Manual: sign in once, then rerun with no browser prompt
 
 **Dependencies:** None (can run in parallel with Tasks 3–4)
@@ -91,12 +91,12 @@ location, and attendee count, ordered by start time. Replace the fake
 local-only check as Notes.
 
 **Acceptance criteria:**
-- [ ] `list_events` returns events in range, ordered, with all-day events handled
-- [ ] Fake tasks and calendar tools are gone from schemas and the registry
-- [ ] Calendar tools are blocked for non-local providers
+- [x] `list_events` returns events in range, ordered, with all-day events handled
+- [x] Fake tasks and calendar tools are gone from schemas and the registry
+- [x] Calendar tools are blocked for non-local providers
 
 **Verification:**
-- [ ] `uv run pytest -q` (fake Calendar service, no network)
+- [x] `uv run pytest -q` (fake Calendar service, no network)
 - [ ] Manual: CLI "what's on my calendar today?" matches Google Calendar
 
 **Dependencies:** Tasks 4, 5
@@ -114,12 +114,12 @@ stripped) truncated to 4,000 characters. The prompt marks email content as
 untrusted. Same local-only check.
 
 **Acceptance criteria:**
-- [ ] Search returns metadata only; read returns plain text with a truncation marker
-- [ ] HTML-only and multipart emails produce readable text
-- [ ] Gmail tools are blocked for non-local providers
+- [x] Search returns metadata only; read returns plain text with a truncation marker
+- [x] HTML-only and multipart emails produce readable text
+- [x] Gmail tools are blocked for non-local providers
 
 **Verification:**
-- [ ] `uv run pytest -q` (fake Gmail service, no network)
+- [x] `uv run pytest -q` (fake Gmail service, no network)
 - [ ] Manual: CLI "any unread emails from today?" matches Gmail
 
 **Dependencies:** Tasks 5, 6
@@ -142,12 +142,12 @@ takes `{"message"}` and returns `{"text", "error", "tools"}`. `GET /` serves
 a loading state. It binds to `127.0.0.1` only.
 
 **Acceptance criteria:**
-- [ ] `POST /api/chat` returns the turn; consecutive calls share memory
-- [ ] Empty message gets a 422; agent errors come back in `error`, not as a 500
-- [ ] Chat page sends a message and shows the reply
+- [x] `POST /api/chat` returns the turn; consecutive calls share memory
+- [x] Empty message gets a 422; agent errors come back in `error`, not as a 500
+- [x] Chat page sends a message and shows the reply
 
 **Verification:**
-- [ ] `uv run pytest tests/test_server.py -q` (TestClient, fake adapter)
+- [x] `uv run pytest tests/test_server.py -q` (TestClient, fake adapter)
 - [ ] Manual: `uv run uvicorn server:app`, then chat at http://127.0.0.1:8000
 
 **Dependencies:** Task 4
@@ -165,8 +165,8 @@ a loading state. It binds to `127.0.0.1` only.
 to opening the page in the default browser.
 
 **Acceptance criteria:**
-- [ ] `uv run python app.py` shows the menu-bar icon; no Dock icon
-- [ ] "Open chat" opens the chat window; "Quit" stops the server and exits
+- [x] `uv run python app.py` shows the menu-bar icon; no Dock icon
+- [x] "Open chat" opens the chat window; "Quit" stops the server and exits
 
 **Verification:**
 - [ ] Manual: launch, chat, close the window, reopen (conversation kept), quit

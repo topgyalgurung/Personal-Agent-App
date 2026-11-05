@@ -49,15 +49,15 @@ Gmail**. It's **read-only**: it never creates, edits, sends, or deletes anything
 ### Checkpoint 1: chat over Notes works in the CLI
 
 ### Phase 2: Google data
-- [ ] Task 5: Google sign-in (read-only)
-- [ ] Task 6: Google Calendar read; remove fake data
-- [ ] Task 7: Gmail search and read
+- [x] Task 5: Google sign-in (read-only)
+- [x] Task 6: Google Calendar read; remove fake data
+- [x] Task 7: Gmail search and read
 
 ### Checkpoint 2: morning check works in the CLI
 
 ### Phase 3: The app
-- [ ] Task 8: Chat API and chat page
-- [ ] Task 9: Menu-bar app
+- [x] Task 8: Chat API and chat page
+- [x] Task 9: Menu-bar app
 
 ### Checkpoint 3: MVP done
 
