@@ -1,92 +1,79 @@
-# Implementation Plan: agent-core
+# Implementation Plan: MVP
 
-Implements [SPEC-agent-core.md](../SPEC-agent-core.md) (approved 2026-11-05).
-Tasks are tracked in [todo.md](todo.md).
+Replanned 2026-11-05 after Task 2. The original agent-core plan is cut down to
+what a first working app needs. Tasks are tracked in [todo.md](todo.md).
 
-## Overview
+## MVP definition (confirmed 2026-11-05)
 
-Replace the "Claude first, Ollama on failure" router with a `Session`. A session
-answers with local Ollama, remembers the conversation, re-answers a turn with
-Claude only on request, and can pause a turn for approval. The CLI moves onto
-`Session`. `chat-api` and `menubar-ui` will use the same interface later.
+A **menu-bar app** that opens a chat window. You ask in plain language and a
+**local Ollama model** answers from your **Apple Notes, Google Calendar, and
+Gmail**. It's **read-only**: it never creates, edits, sends, or deletes anything.
 
-## Current state (checked 2026-11-05)
+## Done so far
 
-- `uv run pytest` fails at collection (`No module named 'tools'`) because the
-  project root isn't on `sys.path`. `uv run python -m pytest` passes 7/7. Task 1
-  fixes this.
-- Much of the work is uncommitted (agent.py, tools.py, schemas.py, tool_dispatch.py,
-  integrations/, tests/test_notes.py). Commit it as a baseline before Task 1 so
-  each task gets its own diff.
-- Installed models: `qwen2:7b`, `llama3.2`. `qwen2.5:7b` and `llama3.1:8b`
-  need to be pulled (Task 3).
+- [x] Task 1: Fix test collection (`890dfcd`)
+- [x] Task 2: `Session.send` with Ollama and memory (`de02041`, `8c0c179`, `e36dc90`)
+- [x] Bug fix: `schemas.py` syntax error (`f79d2c4`)
 
 ## Architecture Decisions
 
-- **Neutral history with synthetic call ids.** Ollama tool calls have no id.
-  The history assigns each call an id (`call_<n>`) so it can be turned into
-  Claude `tool_use`/`tool_result` pairs during escalation.
-- **Thin adapters.** `providers/ollama.py` and `providers/claude.py` each expose
-  `chat(messages, tools) -> Reply(text, tool_calls)`. All looping, history, and
-  dispatch live in `agent_core.py`, so they're tested once with a fake adapter.
-- **Pass-through guard first.** `dispatch()` returns `Executed | NeedsApproval`
-  from the start. A pass-through version always executes. The pause and resume
-  path is tested with a fake guard, and `action-guard` adds the real rules later.
-- **Model quality is checked early.** The eval script runs right after the
-  basic loop works (Task 3). If 7B tool use is poor, we find out before building
-  more on top of it.
+- **Read-only means no approval system.** Every MVP tool is a read, so
+  `action-guard`, pause/resume, and confirm cards are deferred. The
+  `dispatch()` seam stays so they can be added later without rework.
+- **Google OAuth with read-only scopes** (`calendar.readonly`,
+  `gmail.readonly`). A bug or prompt injection can't change your data.
+- **Token stored in a local file** (`~/.config/personal-agent/token.json`,
+  mode 600). Keychain comes later.
+- **Personal data stays local.** Calendar and Gmail tools get the same
+  local-Ollama-only check as Notes. With Claude escalation deferred, no
+  personal data leaves the laptop.
+- **Fake in-memory tasks and calendar are removed.** A real app must not answer
+  from made-up data. `get_calendar_events` is replaced by Google Calendar, and
+  `get_tasks` and `create_task` are dropped until a real task source exists.
+- **UI stack:** FastAPI serves one chat page from `frontend/`. A `rumps`
+  menu-bar icon opens it in a `pywebview` window. Everything runs in one
+  Python process.
 
-## Dependency graph
+## New dependencies (approving this plan approves these)
 
-```
-T1 test setup
- └─ T2 Session.send (Ollama, memory, pass-through dispatch)
-     ├─ T3 eval script            ← risk check, run early
-     ├─ T4 robustness
-     │   └─ T5 CLI on Session, delete router
-     │       └─ T7 escalate + consent ─┐
-     ├─ T6 Claude adapter ─────────────┘
-     └─ T8 pause/resume  (after T5, so the CLI can show y/n)
-```
-
-T3, T4, and T6 can be done in any order after T2.
+`google-api-python-client`, `google-auth-oauthlib` (Google APIs) ·
+`uvicorn`, `httpx` (serve FastAPI; `httpx` for FastAPI's test client) ·
+`rumps`, `pywebview` (menu bar and window)
 
 ## Task List
 
-### Phase 1: Local chat
-- [x] Task 1: Fix test collection
-- [x] Task 2: `Session.send` with Ollama and multi-turn memory
-- [ ] Task 3: Tool-use eval script and model comparison
+### Phase 1: Usable in the terminal
+- [ ] Task 3: Friendly errors (Ollama down, step limit)
+- [ ] Task 4: CLI on `Session`; delete router
 
-### Checkpoint A0: model is good enough
-- [ ] Eval results reviewed with user before continuing
+### Checkpoint 1: chat over Notes works in the CLI
 
-- [ ] Task 4: Robustness for 7B models
-- [ ] Task 5: CLI on `Session`; delete router
+### Phase 2: Google data
+- [ ] Task 5: Google sign-in (read-only)
+- [ ] Task 6: Google Calendar read; remove fake data
+- [ ] Task 7: Gmail search and read
 
-### Checkpoint A: local-only chat works
-- [ ] Spec success criteria 2 and 4 pass by hand
+### Checkpoint 2: morning check works in the CLI
 
-### Phase 2: Claude on request
-- [ ] Task 6: Claude adapter
-- [ ] Task 7: `Session.escalate` with per-request cloud consent
+### Phase 3: The app
+- [ ] Task 8: Chat API and chat page
+- [ ] Task 9: Menu-bar app
 
-### Phase 3: Approval seam
-- [ ] Task 8: Pause and resume
+### Checkpoint 3: MVP done
 
-### Checkpoint B: module complete
-- [ ] All six spec success criteria met, README updated
+## Deferred (after MVP)
+
+Writes (create note, add event, drafts), then `action-guard` and pause/resume
+for send, edit, and delete · "Ask Claude instead" · tool-use eval script ·
+history trimming and truncation · Keychain token storage · streaming replies ·
+Reminders, Docs, Drive, Notion, habits.
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| 7B models pick the wrong tools or send bad arguments | High | Eval in Task 3 before building further; errors go back to the model for a retry (Task 4); Claude escalation as the manual fallback |
-| Ollama's tool-call format differs between models or versions | Med | Adapter tests use fixture JSON from real `qwen2.5:7b` and `llama3.1:8b` replies captured in Task 3 |
-| Claude rejects the synthesized tool_use/tool_result history | Med | Task 6 tests the conversion against the SDK's types; Task 7 runs one real escalation by hand |
-| Personal data leaks to Claude outside escalation | High | `dispatch` rejects Claude calls without `cloud_consent`; explicit tests in Task 7 |
-| A 10-turn history plus tool results overflows 8k context | Low | Trimming and 6,000-character truncation in Task 4; raise `num_ctx` if the eval shows truncation hurting answers |
-
-## Open Questions
-
-None blocking. The model choice is settled by the Task 3 eval results.
+| 7B model picks the wrong tool or gives a bad answer | High | Few, clearly described tools; errors go back to the model; you judge quality at Checkpoint 1 and we switch models if needed |
+| Google OAuth setup is fiddly (Cloud project, consent screen, test user) | Med | Task 5 includes a step-by-step setup section in the README; you do the one-time console steps |
+| Email bodies are long and full of HTML, overflowing a 7B context | Med | `read_email` returns plain text, truncated to 4,000 characters, same as notes |
+| `pywebview` or `rumps` problems on Python 3.14 | Med | Task 9 starts with a spike; fallback is opening the chat page in the default browser from the menu-bar icon |
+| Prompt injection inside an email or note | Low (read-only) | Already in the system prompt: content is data, not instructions. Read-only scopes cap the damage |

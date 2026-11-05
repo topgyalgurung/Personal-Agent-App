@@ -24,6 +24,12 @@ local Ollama model by default. Claude is used only when you click
 2. `chat-api` → `menubar-ui` (the real app, working with Notes)
 3. `google-auth` → `google-calendar` → `gmail`
 
+## MVP cut (2026-11-05)
+
+The first release is a **read-only** menu-bar app over Notes, Calendar, and
+Gmail. `action-guard` and every write action are deferred. Claude escalation
+is deferred too. See [tasks/plan.md](tasks/plan.md).
+
 ## Safety tiers (owned by `action-guard`, used by every integration)
 
 | Tier | Actions |
