@@ -1,19 +1,21 @@
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 
-def get_system_prompt():
-    now = datetime.now(
-        ZoneInfo("America/New_York")
-    )
+def describe_timezone(now):
+    offset = now.strftime("%z")
+    return f"{now.tzname()} (UTC{offset[:3]}:{offset[3:]})"
+
+
+def get_system_prompt(now=None):
+    now = now or datetime.now().astimezone()
 
     return f"""
 You are a Personal Action AI Assistant.
 
 Current date: {now.date().isoformat()}
 Current time: {now.strftime("%H:%M")}
-Timezone: America/New_York
+Timezone: {describe_timezone(now)}
 
 Your responsibilities:
 1. Retrieve outstanding tasks using tools.
