@@ -50,7 +50,7 @@ TOOLS = [
                 "due_date",
             ],
         },
-    }
+    },
     # notes schema
     {
         "name": "list_notes",
