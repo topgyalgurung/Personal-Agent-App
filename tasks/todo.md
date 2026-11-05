@@ -35,12 +35,12 @@ the model sees, not a crash.
 `prompts.py` uses the system timezone. Update the README.
 
 **Acceptance criteria:**
-- [ ] `router.py`, `ollama_agent.py`, and `LLM_PROVIDER` are gone; `main.py` uses `Session`
-- [ ] System prompt shows the local timezone
-- [ ] README describes the local-only MVP
+- [x] `router.py`, `ollama_agent.py`, and `LLM_PROVIDER` are gone; `main.py` uses `Session`
+- [x] System prompt shows the local timezone
+- [x] README describes the local-only MVP
 
 **Verification:**
-- [ ] `uv run pytest -q`
+- [x] `uv run pytest -q`
 - [ ] Manual: `uv run python main.py`, with Notes enabled, a two-turn
       conversation where turn 2 uses turn 1's context
 - [ ] Manual: with Ollama stopped, the CLI shows the start message

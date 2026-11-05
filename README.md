@@ -1,51 +1,38 @@
 # Personal Action AI Agent
 
-A Python-based AI assistant for managing tasks, calendar events, and daily priorities, featuring **Claude API with automatic Ollama fallback**.
+A local, read-only assistant for your personal data. Ask in plain language and a
+local Ollama model answers from your Apple Notes. Google Calendar and Gmail come
+next, then a menu-bar chat window. Nothing leaves your laptop.
 
-## Architecture
-
-```text
-User → Router → Claude API (Primary)
-                 ↓ On API failure
-               Ollama (Local)
-                 ↓
-            Shared Python Tools
-                 ↓
-             AI Response
-```
+## How it works
 
 ```
-main.py
-  → router.py chooses Claude or Ollama
-    → model requests a tool
-      → shared dispatcher checks privacy settings
-        → Python runs a fixed AppleScript
-          → Notes returns structured data
-        ← tool result goes back to the chosen model
-      ← model identifies ideas, tasks, and follow-ups
-
+main.py (CLI)
+  → agent_core.Session keeps the conversation
+    → providers/ollama.py asks the local model
+      → model requests a tool
+        → tool_dispatch.py checks privacy settings
+          → Python runs a fixed AppleScript
+            → Notes returns structured data
+          ← tool result goes back to the model
+      ← model answers
 ```
 
-## LLM Fallback
-
-The application uses a custom `router.py` to manage model selection and fallback.
-
-- **Claude:** Primary LLM using Anthropic's Messages API.
-- **Ollama:** Local fallback using the `/api/chat` REST endpoint.
-- **Automatic fallback:** Handles authentication, rate-limit, connection, and server errors.
-- **Shared tools:** Both providers support task management and calendar operations.
-- **Clean output:** Internal API errors are logged rather than displayed to users.
+Status: the MVP plan is in `tasks/plan.md`. Today the CLI reads Apple Notes only.
+Calendar, Gmail, and the menu-bar app are planned. Claude is not used.
 
 ## Project Structure
 
 ```text
 ├── main.py           # CLI entry point
-├── router.py         # Provider routing and fallback
-├── agent.py          # Claude agent and tool loop
-├── ollama_agent.py   # Ollama REST API agent
-├── tools.py          # Task and calendar functions
+├── agent_core.py     # Session: conversation memory and tool loop
+├── providers/        # Model adapters (Ollama)
+├── tool_dispatch.py  # Runs tools, privacy check
+├── integrations/     # Apple Notes (AppleScript)
 ├── schemas.py        # Tool definitions
-└── prompts.py        # System instructions
+├── prompts.py        # System instructions
+├── agent.py          # Claude agent, unused until "Ask Claude instead"
+└── tools.py          # Placeholder tasks and calendar, to be replaced
 ```
 
 ## Setup
@@ -56,34 +43,31 @@ Install dependencies:
 uv sync
 ```
 
-Configure `.env`:
-
-```env
-LLM_PROVIDER=claude
-ANTHROPIC_API_KEY=your_api_key
-CLAUDE_MODEL=claude-haiku-4-5
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=qwen3:4b
-```
-
 Install the local model:
 
 ```bash
-ollama pull qwen3:4b
+ollama pull qwen2.5:7b
 ```
 
-Run the agent:
+Optional `.env`:
+
+```env
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+Run the agent (Ollama must be running: `ollama serve`):
 
 ```bash
-uv run main.py
+uv run python main.py
 ```
 
-Set `LLM_PROVIDER=ollama` to run locally without Claude.
+Run the tests:
+
+```bash
+uv run pytest -q
+```
 
 ## Tech Stack
 
-Python · uv · Anthropic SDK · Ollama · Requests · Pytest
-
-## Limitations & Next Steps
-
-Fallback restarts the request, so write operations need idempotency protection to prevent duplicates. Planned improvements include persistent memory, API cost tracking, automated evaluations, and intelligent model routing.
+Python · uv · Ollama · Requests · Pytest
