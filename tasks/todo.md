@@ -14,12 +14,12 @@ of raising. Malformed tool-argument JSON from Ollama becomes an error result
 the model sees, not a crash.
 
 **Acceptance criteria:**
-- [ ] Ollama connection refused or timeout returns `Turn(error="Ollama isn't running. Start it with: ollama serve")`
-- [ ] More than 8 tool steps returns a `Turn` with an error and the tool calls made so far
-- [ ] Malformed argument JSON gives the model an error result and the loop continues
+- [x] Ollama connection refused or timeout returns `Turn(error="Ollama isn't running. Start it with: ollama serve")`
+- [x] More than 8 tool steps returns a `Turn` with an error and the tool calls made so far
+- [x] Malformed argument JSON gives the model an error result and the loop continues
 
 **Verification:**
-- [ ] `uv run pytest -q`
+- [x] `uv run pytest -q`
 
 **Dependencies:** None
 **Files:** `agent_core.py`, `providers/ollama.py`, `tests/test_agent_core.py`, `tests/test_providers.py`

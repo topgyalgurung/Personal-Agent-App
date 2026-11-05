@@ -43,7 +43,7 @@ Gmail**. It's **read-only**: it never creates, edits, sends, or deletes anything
 ## Task List
 
 ### Phase 1: Usable in the terminal
-- [ ] Task 3: Friendly errors (Ollama down, step limit)
+- [x] Task 3: Friendly errors (Ollama down, step limit)
 - [ ] Task 4: CLI on `Session`; delete router
 
 ### Checkpoint 1: chat over Notes works in the CLI

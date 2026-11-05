@@ -12,6 +12,7 @@ import uuid
 from dataclasses import dataclass, field
 
 from prompts import get_system_prompt
+from providers import ProviderUnavailable
 from providers.ollama import OllamaAdapter
 from schemas import TOOLS
 from tool_dispatch import dispatch
@@ -56,19 +57,31 @@ class Session:
 
     def send(self, user_text):
         """Answer a new user message with the default adapter."""
+        checkpoint = len(self.history)
         self.history.append({"role": "user", "text": user_text})
-        return self._run_tool_loop(self.adapter)
+
+        turn = self._run_tool_loop(self.adapter)
+
+        # A failed turn is dropped so a retry starts clean.
+        if turn.error:
+            del self.history[checkpoint:]
+
+        return turn
 
     def _run_tool_loop(self, adapter):
         """Call the model until it answers without requesting tools."""
         records = []
 
         for _ in range(MAX_TOOL_ITERATIONS):
-            reply = adapter.chat(
-                self.history,
-                system=self.system_prompt(),
-                tools=self.tools,
-            )
+            try:
+                reply = adapter.chat(
+                    self.history,
+                    system=self.system_prompt(),
+                    tools=self.tools,
+                )
+            except ProviderUnavailable as error:
+                return self._failed(adapter, str(error), records)
+
             calls = [self._with_id(call) for call in reply.tool_calls]
 
             self.history.append({
@@ -101,7 +114,21 @@ class Session:
                     ToolRecord(call.id, call.name, call.arguments, result)
                 )
 
-        raise RuntimeError("Agent exceeded maximum tool iterations")
+        return self._failed(
+            adapter,
+            f"I stopped after {MAX_TOOL_ITERATIONS} tool steps without an "
+            "answer. Try asking a simpler or more specific question.",
+            records,
+        )
+
+    def _failed(self, adapter, error, records):
+        return Turn(
+            id=uuid.uuid4().hex,
+            provider=adapter.name,
+            text="",
+            tool_calls=records,
+            error=error,
+        )
 
     def _with_id(self, call):
         """Give calls without a provider id a session-unique one."""
@@ -114,6 +141,9 @@ class Session:
     def _run_tool(self, call, *, provider):
         """Run one tool call; failures become error results for the model."""
         logger.debug("Tool call: %s", call.name)
+
+        if call.error:
+            return {"success": False, "error": call.error}
 
         try:
             outcome = dispatch(call.name, call.arguments, provider=provider)

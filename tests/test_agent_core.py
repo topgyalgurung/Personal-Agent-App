@@ -1,8 +1,8 @@
 import copy
 from datetime import date
 
-from agent_core import Session, Turn
-from providers import Reply, ToolCall
+from agent_core import MAX_TOOL_ITERATIONS, Session, Turn
+from providers import ProviderUnavailable, Reply, ToolCall
 from schemas import TOOLS
 
 
@@ -21,7 +21,12 @@ class FakeAdapter:
             "system": system,
             "tools": tools,
         })
-        return self.replies.pop(0)
+        reply = self.replies.pop(0)
+
+        if isinstance(reply, Exception):
+            raise reply
+
+        return reply
 
 
 def make_session(*replies):
@@ -201,3 +206,78 @@ def test_defaults_to_ollama_adapter():
     session = Session()
 
     assert session.adapter.name == "ollama"
+
+
+# --- Errors -------------------------------------------------------------
+
+
+def test_unavailable_model_returns_turn_with_error():
+    session, _ = make_session(ProviderUnavailable("Ollama isn't running."))
+
+    turn = session.send("Hi")
+
+    assert turn.error == "Ollama isn't running."
+    assert turn.text == ""
+    assert turn.provider == "ollama"
+
+
+def test_failed_turn_is_removed_from_history():
+    session, adapter = make_session(
+        ProviderUnavailable("Ollama isn't running."),
+        Reply(text="Hello!"),
+    )
+
+    session.send("First try")
+    session.send("Second try")
+
+    assert adapter.calls[1]["history"] == [
+        {"role": "user", "text": "Second try"},
+    ]
+
+
+def test_step_limit_returns_turn_with_error_and_calls_made():
+    endless = [
+        Reply(text="", tool_calls=[ToolCall(name="get_tasks", arguments={})])
+        for _ in range(MAX_TOOL_ITERATIONS)
+    ]
+    session, adapter = make_session(*endless)
+
+    turn = session.send("Loop forever")
+
+    assert MAX_TOOL_ITERATIONS == 8
+    assert "8 tool steps" in turn.error
+    assert len(turn.tool_calls) == 8
+    assert len(adapter.calls) == 8
+
+
+def test_step_limit_turn_is_removed_from_history():
+    endless = [
+        Reply(text="", tool_calls=[ToolCall(name="get_tasks", arguments={})])
+        for _ in range(MAX_TOOL_ITERATIONS)
+    ]
+    session, adapter = make_session(*endless, Reply(text="Hi again"))
+
+    session.send("Loop forever")
+    session.send("Hello?")
+
+    assert adapter.calls[-1]["history"] == [{"role": "user", "text": "Hello?"}]
+
+
+def test_malformed_tool_call_is_not_run_and_model_sees_error():
+    bad = ToolCall(
+        name="create_task",
+        arguments={},
+        error="Tool arguments were not valid JSON.",
+    )
+    session, adapter = make_session(
+        Reply(text="", tool_calls=[bad]),
+        Reply(text="Sorry, let me retry."),
+    )
+
+    turn = session.send("Add a task")
+
+    expected = {"success": False, "error": "Tool arguments were not valid JSON."}
+    assert turn.tool_calls[0].result == expected
+    assert adapter.calls[1]["history"][-1]["result"] == expected
+    assert turn.text == "Sorry, let me retry."
+    assert turn.error is None
