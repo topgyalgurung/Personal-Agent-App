@@ -1,9 +1,32 @@
 # Personal Action AI Agent
 
-A local, read-only assistant for your personal data. Ask in plain language and a
-local Ollama model answers from your Google Calendar, Gmail, and Apple Notes.
-It lives in the macOS menu bar. Nothing leaves your laptop, and it can't create,
-edit, send, or delete anything.
+A local, **read-only** assistant for your personal data. Ask in plain language
+and a free, open-source Ollama model answers from your Google Calendar, Gmail,
+and Apple Notes. It lives in the macOS menu bar. By default nothing leaves your
+laptop.
+
+## Status
+
+| | |
+|---|---|
+| Reads Calendar, Gmail, Apple Notes | Working |
+| Local model (Ollama) | Working |
+| Editing, creating, sending, or deleting anything | **Not yet.** The agent is read-only today. Write actions are a stretch goal. |
+| Model routing with Claude / OpenAI fallback | **Planned.** Not built yet. |
+
+## Model strategy: cheap first, advanced only when needed
+
+The app is built to spend as little as possible:
+
+1. **Today:** every request goes to a free, open-source model running locally
+   through Ollama (default `qwen2.5:7b`). No API costs.
+2. **Planned:** an intelligent model router. It tries the free local model
+   first. If a task needs a more capable or accurate model, the router falls
+   back to the Claude API or the OpenAI API, or asks you before using one.
+3. Paid models are the exception, not the default, so cost stays low.
+
+Until the router lands, the app uses only the local model and tool calls are
+blocked from reaching any non-local model (see `tool_dispatch.py`).
 
 ## How it works
 
@@ -33,7 +56,7 @@ menu-bar icon (app.py) → chat window → server.py (127.0.0.1 only)
 ├── integrations/     # Google auth, Calendar, Gmail, Apple Notes
 ├── schemas.py        # Tool definitions
 ├── prompts.py        # System instructions
-└── agent.py          # Claude agent, unused until "Ask Claude instead"
+└── agent.py          # Claude agent, unused until the model router is built
 ```
 
 ## Setup
@@ -103,7 +126,7 @@ uv run pytest -q
 
 ## Tech Stack
 
-Python · uv · Ollama · FastAPI · rumps · pywebview · Google APIs · Pytest
+Python · uv · Ollama (Claude/OpenAI fallback planned) · FastAPI · rumps · pywebview · Google APIs · Pytest
 
 ## Built with
 
