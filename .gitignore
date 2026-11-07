@@ -52,5 +52,6 @@ data/
 *.sqlite
 *.sqlite3
 
-# Local AI coding skills (third-party, not part of the app)
-agent-skills/
+# Local AI coding skills (third-party). Only the lock file is tracked.
+agent-skills/*
+!agent-skills/skills-lock.json

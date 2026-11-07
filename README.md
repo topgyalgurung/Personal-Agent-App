@@ -104,3 +104,11 @@ uv run pytest -q
 ## Tech Stack
 
 Python · uv · Ollama · FastAPI · rumps · pywebview · Google APIs · Pytest
+
+## Built with
+
+Built with an AI coding assistant using the
+[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) pack. The
+exact skills used are pinned in [agent-skills/skills-lock.json](agent-skills/skills-lock.json).
+The work followed a spec-first, small-tasks workflow; see
+[SPEC-agent-core.md](SPEC-agent-core.md) and [tasks/plan.md](tasks/plan.md).
