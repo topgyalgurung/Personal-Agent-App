@@ -4,10 +4,18 @@
 .env.*
 !.env.example
 
+# Google OAuth secrets and tokens (normally in ~/.config/personal-agent/)
+credentials.json
+token.json
+client_secret*.json
+*.pem
+*.key
+
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.eggs/
 build/
 dist/
 
@@ -19,6 +27,8 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
+.coverage.*
+.hypothesis/
 .ruff_cache/
 .mypy_cache/
 
@@ -29,6 +39,8 @@ htmlcov/
 
 # macOS
 .DS_Store
+.AppleDouble
+.Trashes
 
 # Logs
 *.log
