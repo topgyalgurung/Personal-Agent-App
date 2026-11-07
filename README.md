@@ -1,39 +1,39 @@
 # Personal Action AI Agent
 
-A Python-based AI assistant for managing tasks, calendar events, and daily priorities, featuring **Claude API with automatic Ollama fallback**.
+A local, read-only assistant for your personal data. Ask in plain language and a
+local Ollama model answers from your Google Calendar, Gmail, and Apple Notes.
+It lives in the macOS menu bar. Nothing leaves your laptop, and it can't create,
+edit, send, or delete anything.
 
-## Architecture
+## How it works
 
-```text
-User → Router → Claude API (Primary)
-                 ↓ On API failure
-               Ollama (Local)
-                 ↓
-            Shared Python Tools
-                 ↓
-             AI Response
 ```
-
-## LLM Fallback
-
-The application uses a custom `router.py` to manage model selection and fallback.
-
-- **Claude:** Primary LLM using Anthropic's Messages API.
-- **Ollama:** Local fallback using the `/api/chat` REST endpoint.
-- **Automatic fallback:** Handles authentication, rate-limit, connection, and server errors.
-- **Shared tools:** Both providers support task management and calendar operations.
-- **Clean output:** Internal API errors are logged rather than displayed to users.
+menu-bar icon (app.py) → chat window → server.py (127.0.0.1 only)
+  → agent_core.Session keeps the conversation
+    → providers/ollama.py asks the local model
+      → model requests a tool
+        → tool_dispatch.py checks the model is local
+          → Calendar / Gmail (read-only Google scopes) or Apple Notes
+        ← tool result goes back to the model
+    ← model answers
+```
 
 ## Project Structure
 
 ```text
-├── main.py           # CLI entry point
-├── router.py         # Provider routing and fallback
-├── agent.py          # Claude agent and tool loop
-├── ollama_agent.py   # Ollama REST API agent
-├── tools.py          # Task and calendar functions
+├── app.py            # Menu-bar app (rumps); opens the chat window
+├── chat_window.py    # Native window (pywebview), run by app.py
+├── server.py         # FastAPI: POST /api/chat, GET /
+├── frontend/         # Chat page
+├── main.py           # CLI alternative to the menu-bar app
+├── agent_core.py     # Session: conversation memory and tool loop
+├── providers/        # Model adapters (Ollama)
+├── tool_dispatch.py  # Runs tools, local-only privacy check
+├── tools.py          # Tools the model can call
+├── integrations/     # Google auth, Calendar, Gmail, Apple Notes
 ├── schemas.py        # Tool definitions
-└── prompts.py        # System instructions
+├── prompts.py        # System instructions
+└── agent.py          # Claude agent, unused until "Ask Claude instead"
 ```
 
 ## Setup
@@ -44,34 +44,63 @@ Install dependencies:
 uv sync
 ```
 
-Configure `.env`:
-
-```env
-LLM_PROVIDER=claude
-ANTHROPIC_API_KEY=your_api_key
-CLAUDE_MODEL=claude-haiku-4-5
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=qwen3:4b
-```
-
 Install the local model:
 
 ```bash
-ollama pull qwen3:4b
+ollama pull qwen2.5:7b
 ```
 
-Run the agent:
+Optional `.env`:
+
+```env
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+Enable Apple Notes access in `.env` (off by default):
+
+```env
+APPLE_NOTES_ENABLED=1
+```
+
+### Google sign-in (one time)
+
+The app only asks for read-only access to Calendar and Gmail.
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project.
+2. Enable the **Google Calendar API** and the **Gmail API** (APIs & Services → Library).
+3. Configure the OAuth consent screen: user type **External**, add your own
+   Google account as a **test user**.
+4. Create credentials: **OAuth client ID**, application type **Desktop app**.
+   Download the JSON file.
+5. Save it as `~/.config/personal-agent/credentials.json`.
+6. Sign in once (a browser opens):
+
+   ```bash
+   uv run python -m integrations.google_auth
+   ```
+
+The token is saved to `~/.config/personal-agent/token.json` (owner-only
+permissions) and refreshes itself. While the consent screen is in "Testing"
+mode, Google expires the token after 7 days; just sign in again.
+
+### Run
+
+Ollama must be running (`ollama serve`).
 
 ```bash
-uv run main.py
+uv run python app.py    # menu-bar app: click the icon → Open chat
+uv run python main.py   # or chat in the terminal
 ```
 
-Set `LLM_PROVIDER=ollama` to run locally without Claude.
+If the chat window can't open, the menu-bar app opens the page in your browser.
+
+Run the tests:
+
+```bash
+uv run pytest -q
+```
 
 ## Tech Stack
 
-Python · uv · Anthropic SDK · Ollama · Requests · Pytest
-
-## Limitations & Next Steps
-
-Fallback restarts the request, so write operations need idempotency protection to prevent duplicates. Planned improvements include persistent memory, API cost tracking, automated evaluations, and intelligent model routing.
+Python · uv · Ollama · FastAPI · rumps · pywebview · Google APIs · Pytest

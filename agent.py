@@ -7,34 +7,36 @@ from dotenv import load_dotenv
 
 from prompts import get_system_prompt
 from schemas import TOOLS
-from tools import (
-    get_tasks,
-    get_calendar_events,
-    create_task,
-)
+
+# from tools import (
+#     get_tasks,
+#     get_calendar_events,
+#     create_task,
+# )
+from tool_dispatch import execute_tool
 
 load_dotenv()
 
-client = Anthropic()
 MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5")
 
-def execute_tool(name: str, arguments: dict):
-    """Execute a tool requested by Claude."""
+# def execute_tool(name: str, arguments: dict):
+#     """Execute a tool requested by Claude."""
 
-    if name == "get_tasks":
-        return get_tasks()
+#     if name == "get_tasks":
+#         return get_tasks()
 
-    if name == "get_calendar_events":
-        return get_calendar_events()
+#     if name == "get_calendar_events":
+#         return get_calendar_events()
 
-    if name == "create_task":
-        return create_task(**arguments)
+#     if name == "create_task":
+#         return create_task(**arguments)
 
-    raise ValueError(f"Unknown tool: {name}")
+#     raise ValueError(f"Unknown tool: {name}")
 
 
 def run_agent(user_message: str) -> str:
     """Run Claude until it completes the request."""
+    client = Anthropic()
 
     messages = [
         {

@@ -1,23 +1,31 @@
+# CLI for the personal agent: local Ollama, read-only.
 
-# CLI app to begin with 
+import logging
 
-import logging 
-
-from agent import run_agent
-from router import run_with_fallback
+from agent_core import Session
 
 logging.basicConfig(
     level=logging.WARNING
     # level=logging.DEBUG # during development
 )
 
+
+def format_turn(turn):
+    if turn.error:
+        return f"Error: {turn.error}"
+
+    return turn.text
+
+
 def main():
     print("=" * 40)
     print("Personal Action AI Agent")
-    print("Powered by Claude, Ollama. GPT later")
+    print("Local Ollama, read-only")
     print("=" * 40)
 
     print("\nType 'exit' to quit.\n")
+
+    session = Session()
 
     while True:
         user_input = input("You: ").strip()
@@ -29,19 +37,7 @@ def main():
         if not user_input:
             continue
 
-        try:
-            # answer = run_agent(user_input)
-            result = run_with_fallback(user_input)
-
-            provider = result["provider"]
-            answer = result["answer"]
-
-            print(f"\n[{provider.upper()}]")
-            print(answer)
-            print()
-
-        except Exception as error:
-            print(f"\nError: {error}\n")
+        print(f"\n{format_turn(session.send(user_input))}\n")
 
 
 if __name__ == "__main__":
