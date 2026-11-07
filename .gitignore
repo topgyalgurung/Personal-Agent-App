@@ -51,3 +51,6 @@ data/
 *.db
 *.sqlite
 *.sqlite3
+
+# Local AI coding skills (third-party, not part of the app)
+agent-skills/
